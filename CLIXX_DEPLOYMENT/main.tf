@@ -62,3 +62,12 @@ resource "aws_efs_mount_target" "east1f" {
   security_groups = [aws_security_group.clixx_sg.id]
 }
 
+# Target group for load balancer
+
+resource "aws_lb_target_group" "clixx_tg" {
+  name     = "tf-clixx-lb-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = data.aws_vpc.default.id
+}
+
