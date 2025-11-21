@@ -86,7 +86,7 @@ resource "aws_lb_target_group" "clixx_tg" {
   vpc_id   = data.aws_vpc.default.id
 }
 
-# LB listener
+# LB listener, forwards HTTP requests to target group 
 
 resource "aws_lb_listener" "front_end" {
   load_balancer_arn = aws_lb.clixx_lb.arn
