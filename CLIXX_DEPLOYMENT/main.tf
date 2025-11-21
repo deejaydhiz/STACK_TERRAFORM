@@ -62,6 +62,21 @@ resource "aws_efs_mount_target" "east1f" {
   security_groups = [aws_security_group.clixx_sg.id]
 }
 
+# Application Load Balancer
+
+resource "aws_lb" "clixx_lb" {
+  name               = "clixx-lb-tf"
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.clixx_sg.id]
+  subnets            = ["subnet-0a3d701d4ae56bd83", "subnet-096c55d1b79478358", "subnet-02b9ff9a66612dba1", "subnet-0cea1d9a41e99ed45", "subnet-00a91d6c6d1743e8f", "subnet-05393b0e3f17eeeae"]
+
+  tags = {
+    Environment = "dev"
+    Name        = "Clixx LB"
+    CreatedBy   = "Deji using Terraform"
+  }
+}
+
 # Target group for load balancer
 
 resource "aws_lb_target_group" "clixx_tg" {
@@ -71,3 +86,13 @@ resource "aws_lb_target_group" "clixx_tg" {
   vpc_id   = data.aws_vpc.default.id
 }
 
+resource "aws_lb_listener" "front_end" {
+  load_balancer_arn = aws_lb.clixx_lb.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.clixx_tg.arn
+  }
+}
