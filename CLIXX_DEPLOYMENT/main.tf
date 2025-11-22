@@ -10,8 +10,6 @@ resource "aws_db_instance" "clixx_db" {
   lifecycle {
     ignore_changes = [snapshot_identifier]
   }
-}
-
 
 ### Create EFS for for clixx network file sharing ###
 
