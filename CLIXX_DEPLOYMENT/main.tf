@@ -101,11 +101,6 @@ resource "aws_lb_listener" "clixx_front-end" {
 
 ### Resolve Load Balancer DNS to our Route 53 domain (clixx.deji-stack.com) ###
 
-data "aws_route53_zone" "clixx_dns" {
-  name         = "deji-stack.com"
-  private_zone = false
-}
-
 resource "aws_route53_record" "clixx_dns" {
   zone_id = data.aws_route53_zone.clixx_dns.zone_id
   name    = "clixx.${data.aws_route53_zone.clixx_dns.name}"
@@ -117,3 +112,12 @@ resource "aws_route53_record" "clixx_dns" {
     evaluate_target_health = true
   }
 }
+
+### Create key pair ###
+
+resource "aws_key_pair" "clixx_kp" {
+  key_name   = "terraform-kp"
+  public_key = file("~/.ssh/terraform-key.pub")
+}
+
+
