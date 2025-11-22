@@ -1,4 +1,4 @@
-#### Restores the database from the provided snapshot ####
+# Restores the database from the provided snapshot 
 
 resource "aws_db_instance" "clixx_db" {
   instance_class          = "db.t4g.micro"
@@ -10,8 +10,10 @@ resource "aws_db_instance" "clixx_db" {
   lifecycle {
     ignore_changes = [snapshot_identifier]
   }
+}
 
-### Create EFS for for clixx network file sharing ###
+
+# Create EFS for for clixx network file sharing 
 
 resource "aws_efs_file_system" "clixx_efs" {
   creation_token    = "clixx-web"
@@ -22,7 +24,7 @@ resource "aws_efs_file_system" "clixx_efs" {
   }
 }
 
-### Attach EFS to mount targets in each az for high availability ###
+# Attach EFS to mount targets in each az for high availability
 
 resource "aws_efs_mount_target" "east1a" {
   file_system_id  = aws_efs_file_system.clixx_efs.id
@@ -60,7 +62,7 @@ resource "aws_efs_mount_target" "east1f" {
   security_groups = [aws_security_group.clixx_sg.id]
 }
 
-### Application Load Balancer ###
+# Application Load Balancer
 
 resource "aws_lb" "clixx_lb" {
   name               = "clixx-lb-tf"
@@ -75,7 +77,7 @@ resource "aws_lb" "clixx_lb" {
   }
 }
 
-### Target group for load balancer ###
+# Target group for load balancer
 
 resource "aws_lb_target_group" "clixx_tg" {
   name     = "tf-clixx-lb-tg"
@@ -84,9 +86,9 @@ resource "aws_lb_target_group" "clixx_tg" {
   vpc_id   = data.aws_vpc.default.id
 }
 
-### LB listener, forwards HTTP requests to target group ###
+# LB listener, forwards HTTP requests to target group 
 
-resource "aws_lb_listener" "clixx_front-end" {
+resource "aws_lb_listener" "front_end" {
   load_balancer_arn = aws_lb.clixx_lb.arn
   port              = "80"
   protocol          = "HTTP"
@@ -97,21 +99,3 @@ resource "aws_lb_listener" "clixx_front-end" {
   }
 }
 
-### Resolve Load Balancer DNS to our Route 53 domain (clixx.deji-stack.com) ###
-
-data "aws_route53_zone" "clixx_dns" {
-  name         = "deji-stack.com"
-  private_zone = false
-}
-
-resource "aws_route53_record" "clixx_dns" {
-  zone_id = data.aws_route53_zone.clixx_dns.zone_id
-  name    = "clixx.${data.aws_route53_zone.clixx_dns.name}"
-  type    = "A"
-
-  alias {
-    name                   = aws_lb.clixx_lb.dns_name
-    zone_id                = aws_lb.clixx_lb.zone_id
-    evaluate_target_health = true
-  }
-}
