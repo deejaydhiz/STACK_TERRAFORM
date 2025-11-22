@@ -120,4 +120,18 @@ resource "aws_key_pair" "clixx_kp" {
   public_key = file("~/.ssh/terraform-key.pub")
 }
 
+### Create Auto Scaling Group ###
+
+resource "aws_autoscaling_group" "clixx_asg" {
+  availability_zones = ["us-east-1a", "us-east-1b", "us-east-1c", "us-east-1d", "us-east-1e", "us-east-1f"]
+  desired_capacity   = 1
+  max_size           = 2
+  min_size           = 1
+  target_group_arns  = [aws_lb_target_group.clixx_tg.arn]
+
+  launch_template {
+    id      = aws_launch_template.clixx_template.id
+    version = "$Latest"
+  }
+}
 
