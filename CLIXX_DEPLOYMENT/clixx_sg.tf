@@ -1,9 +1,5 @@
 # Create the security group for the clixx deployment
 
-data "aws_vpc" "default" {
-  default = true
-}
-
 resource "aws_security_group" "clixx_sg" {
   name        = "clixx_SG"
   description = "This is the security group for the clixx deployment"
