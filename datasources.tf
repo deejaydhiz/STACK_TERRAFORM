@@ -1,3 +1,3 @@
-data "aws_vpc" "default" {
-  default = true
+data "aws_vpc" "selected" {
+  id = var.vpc_id
 }

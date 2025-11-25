@@ -1,13 +1,9 @@
 # Create the security group for the blog deployment
  resource "aws_security_group" "blog_sg" {
-  name        = "blog_SG"
+  name        = var.sg_name
   description = "This is the security group for the blog deployment"
-  vpc_id      = data.aws_vpc.default.id
-  tags = {
-    Name      = "blog_sg"
-    Project   = "Wordpress Blog Deployment"
-    CreatedBy = "Deji using Terraform"
-  }
+  vpc_id      = data.aws_vpc.selected.id
+  tags        = var.tags
 }
 
 resource "aws_vpc_security_group_ingress_rule" "allow_http" {
@@ -31,7 +27,7 @@ resource "aws_vpc_security_group_ingress_rule" "allow_https" {
 resource "aws_vpc_security_group_ingress_rule" "allow_rds" {
   security_group_id = aws_security_group.blog_sg.id
   description = "Allow RDS connection access"
-  cidr_ipv4   = "0.0.0.0/0"
+  cidr_ipv4   = data.aws_vpc.selected.cidr_block
   from_port   = 3306
   ip_protocol = "tcp"
   to_port     = 3306
@@ -40,7 +36,7 @@ resource "aws_vpc_security_group_ingress_rule" "allow_rds" {
 resource "aws_vpc_security_group_ingress_rule" "allow_nfs" {
   security_group_id = aws_security_group.blog_sg.id
   description = "Allow EFS access"
-  cidr_ipv4   = "0.0.0.0/0"
+  cidr_ipv4   = data.aws_vpc.selected.cidr_block
   from_port   = 2049
   ip_protocol = "tcp"
   to_port     = 2049
@@ -49,7 +45,7 @@ resource "aws_vpc_security_group_ingress_rule" "allow_nfs" {
 resource "aws_vpc_security_group_ingress_rule" "allow_ssh" {
   security_group_id = aws_security_group.blog_sg.id
   description = "Allow SSH access"
-  cidr_ipv4   = "0.0.0.0/0"
+  cidr_ipv4   = data.aws_vpc.selected.cidr_block
   from_port   = 22
   ip_protocol = "tcp"
   to_port     = 22

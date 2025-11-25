@@ -5,9 +5,14 @@ variable "aws_region" {
 }
 
 variable "env" {
-  description = "The environment to deploy to"
+  description = "The environment for the deployment"
   type        = string
   default     = "dev"
+
+  validation {
+    condition     = contains(["dev", "test", "uat", "prod"], var.env)
+    error_message = "The env variable must be one of the following: dev, test, uat, prod."
+  }
 }
 
 variable "accounts" {
@@ -18,21 +23,28 @@ variable "accounts" {
     prod = "807867956627"
   }
 }
-variable "db_name" {
-  description = "The name of the database to create"
-  type        = string
-  default     = "blog_db"
+
+variable "tags" {
+  description = "A map of tags to assign to resources"
+  type        = map(string)
+  default = {
+    stackTeam   = "stackcloud14"
+    OwnerEmail  = "stackawsdeij@gmail.com"
+    Environment = "dev"
+    Project     = "blog-deployment"
+    CostCenter  = "cc1234"
+    Application = "blog-website"
+  }
 }
 
-variable "db_username" {
-  description = "The master username at time of database creation"
+variable "vpc_id" {
+  description = "The VPC ID where resources will be deployed"
   type        = string
-  default     = "admin"
+  default     = ""
 }
 
-variable "db_password" {
-  description = "The master password for the database"
+variable "sg_name" {
+  description = "The name of the security group for the blog deployment"
   type        = string
-  sensitive   = true
+  default     = "blog_SG"
 }
-
