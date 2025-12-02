@@ -1,7 +1,6 @@
 #### Restores the database from the provided snapshot ####
 resource "aws_db_instance" "clixx_db" {
   instance_class          = var.rds_instance_properties["instance_class"]
-  # allocated_storage       = var.rds_instance_properties["allocated_storage"]
   identifier              = var.rds_instance_properties["identifier"]
   snapshot_identifier     = var.rds_instance_properties["snapshot_identifier"]
   skip_final_snapshot     = var.rds_instance_properties["skip_final_snapshot"]
@@ -15,12 +14,10 @@ resource "aws_db_instance" "clixx_db" {
 
 ### Create EFS for for clixx network file sharing ###
 resource "aws_efs_file_system" "clixx_efs" {
-  creation_token    = "clixx-web"
-  encrypted         = true
+  creation_token    = var.efs_properties["creation_token"]
+  encrypted         = var.efs_properties[encrypted]
 
-  tags = {
-    Name = "Clixx-EFS"
-  }
+  tags = var.tags
 }
 
 ### Attach EFS to mount targets in each az for high availability ###
@@ -33,21 +30,16 @@ resource "aws_efs_mount_target" "subnet_mounts" {
 
 ### Application Load Balancer ###
 resource "aws_lb" "clixx_lb" {
-  name               = "clixx-lb-tf"
+  name               = var.ec2_properties["name"]
   load_balancer_type = "application"
   security_groups    = [aws_security_group.clixx_sg.id]
   subnets            = data.aws_subnets.default.ids
-
-  tags = {
-    Environment = "dev"
-    Name        = "Clixx LB"
-    CreatedBy   = "Deji using Terraform"
-  }
+  tags               = var.tags
 }
 
 ### Target group for load balancer ###
 resource "aws_lb_target_group" "clixx_tg" {
-  name     = "tf-clixx-lb-tg"
+  name     = var.ec2_properties["name"]
   port     = 80
   protocol = "HTTP"
   vpc_id   = data.aws_vpc.default.id
@@ -103,7 +95,7 @@ resource "aws_autoscaling_policy" "clixx_scaling_policy" {
 
 resource "aws_autoscaling_group" "clixx_asg" {
   vpc_zone_identifier = data.aws_subnets.default.ids
-  name                = "clixx-asg-tf"
+  name                = var.ec2_properties["name"]
   desired_capacity   = 1
   max_size           = 2
   min_size           = 1
