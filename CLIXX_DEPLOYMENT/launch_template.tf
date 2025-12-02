@@ -2,7 +2,7 @@ resource "aws_launch_template" "clixx_template" {
   name = "clixx-web"
   image_id = "ami-0cae6d6fe6048ca2c"
   instance_type = "t2.micro"
-  key_name = "terraform-kp"
+  key_name = "clixx-kp"
   vpc_security_group_ids = [aws_security_group.clixx_sg.id]
   
   iam_instance_profile {
@@ -15,5 +15,5 @@ resource "aws_launch_template" "clixx_template" {
       Name = "clixx-tf-instance"
     }
   }
-  user_data = filebase64("~/DevOps/StackIT_Solutions/EC2/clixx_strap.sh")
+  user_data = filebase64("C:/automation/TERRAFORM/TF/CLIXX_DEPLOYMENT/clixxbootstrap.sh")
 }

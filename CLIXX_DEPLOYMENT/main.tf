@@ -1,11 +1,12 @@
 #### Restores the database from the provided snapshot ####
-
 resource "aws_db_instance" "clixx_db" {
-  instance_class          = "db.t4g.micro"
-  identifier              = "terraform-clixx-db"
-  snapshot_identifier     = "clixxwordpressdb"
-  skip_final_snapshot     = true
+  instance_class          = var.rds_instance_properties["instance_class"]
+  # allocated_storage       = var.rds_instance_properties["allocated_storage"]
+  identifier              = var.rds_instance_properties["identifier"]
+  snapshot_identifier     = var.rds_instance_properties["snapshot_identifier"]
+  skip_final_snapshot     = var.rds_instance_properties["skip_final_snapshot"]
   vpc_security_group_ids  = [aws_security_group.clixx_sg.id]
+  publicly_accessible     = var.rds_instance_properties["publicly_accessible"]
 
   lifecycle {
     ignore_changes = [snapshot_identifier]
@@ -13,7 +14,6 @@ resource "aws_db_instance" "clixx_db" {
 }
 
 ### Create EFS for for clixx network file sharing ###
-
 resource "aws_efs_file_system" "clixx_efs" {
   creation_token    = "clixx-web"
   encrypted         = true
@@ -24,7 +24,6 @@ resource "aws_efs_file_system" "clixx_efs" {
 }
 
 ### Attach EFS to mount targets in each az for high availability ###
-
 resource "aws_efs_mount_target" "subnet_mounts" {
   for_each = toset(data.aws_subnets.default.ids)
   file_system_id  = aws_efs_file_system.clixx_efs.id
@@ -33,7 +32,6 @@ resource "aws_efs_mount_target" "subnet_mounts" {
 }
 
 ### Application Load Balancer ###
-
 resource "aws_lb" "clixx_lb" {
   name               = "clixx-lb-tf"
   load_balancer_type = "application"
@@ -48,7 +46,6 @@ resource "aws_lb" "clixx_lb" {
 }
 
 ### Target group for load balancer ###
-
 resource "aws_lb_target_group" "clixx_tg" {
   name     = "tf-clixx-lb-tg"
   port     = 80
@@ -57,7 +54,6 @@ resource "aws_lb_target_group" "clixx_tg" {
 }
 
 ### LB listener, forwards HTTP requests to target group ###
-
 resource "aws_lb_listener" "clixx_front-end" {
   load_balancer_arn = aws_lb.clixx_lb.arn
   port              = "80"
@@ -70,7 +66,6 @@ resource "aws_lb_listener" "clixx_front-end" {
 }
 
 ### Resolve Load Balancer DNS to our Route 53 domain (clixx.deji-stack.com) ###
-
 resource "aws_route53_record" "clixx_dns" {
   provider = aws.management
   zone_id  = data.aws_route53_zone.clixx_dns.zone_id
@@ -85,15 +80,13 @@ resource "aws_route53_record" "clixx_dns" {
 }
 
 ### Create key pair ###
-
 resource "aws_key_pair" "clixx_kp" {
-  key_name   = "terraform-kp"
+  key_name   = "clixx-kp"
   public_key = file("~/.ssh/clixx-kp.pub")
 }
 
 ### Create Auto Scaling Group ###
-
-resource "aws_autoscaling_policy" "bat" {
+resource "aws_autoscaling_policy" "clixx_scaling_policy" {
   name                   = "clixx-scale-out-policy"
   policy_type            = "TargetTrackingScaling"
   adjustment_type        = "ChangeInCapacity"
@@ -115,6 +108,8 @@ resource "aws_autoscaling_group" "clixx_asg" {
   max_size           = 2
   min_size           = 1
   target_group_arns  = [aws_lb_target_group.clixx_tg.arn]
+  
+  depends_on = [aws_db_instance.clixx_db]
 
   launch_template {
     id      = aws_launch_template.clixx_template.id
