@@ -15,5 +15,5 @@ resource "aws_launch_template" "clixx_template" {
       Name = "clixx-tf-instance"
     }
   }
-  user_data = filebase64("C:/automation/TERRAFORM/TF/CLIXX_DEPLOYMENT/clixxbootstrap.sh")
+  user_data = filebase64("${path.module}/scripts/clixxbootstrap.sh")
 }
