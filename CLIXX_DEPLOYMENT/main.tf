@@ -15,7 +15,7 @@ resource "aws_db_instance" "clixx_db" {
 ### Create EFS for for clixx network file sharing ###
 resource "aws_efs_file_system" "clixx_efs" {
   creation_token    = var.efs_properties["creation_token"]
-  encrypted         = var.efs_properties[encrypted]
+  encrypted         = var.efs_properties["encrypted"]
 
   tags = var.tags
 }
@@ -42,7 +42,7 @@ resource "aws_lb_target_group" "clixx_tg" {
   name     = var.ec2_properties["name"]
   port     = 80
   protocol = "HTTP"
-  vpc_id   = data.aws_vpc.default.id
+  vpc_id   = data.aws_vpc.main.id
 }
 
 ### LB listener, forwards HTTP requests to target group ###

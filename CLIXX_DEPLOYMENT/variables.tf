@@ -17,11 +17,11 @@ variable "accounts" {
     }
 }
 
-variable "vpc_id" {
-  description = "The VPC ID where resources will be deployed"
-  type        = string
-  default     = "vpc-05b6bd3414e30ee87"
-} 
+# variable "vpc_id" {
+#   description = "The VPC ID where resources will be deployed"
+#   type        = string
+#   default     = "vpc-05b6bd3414e30ee87"
+# } 
 
 variable "db_password" {
   description = "The password for the database"
@@ -46,26 +46,6 @@ variable "aws_region" {
   description = "This is the AWS region to build the resources"
   type = string
   default = "us-east-1"
-}
-
-variable "env" {
-  description = "The environment for the deployment"
-  type        = string
-  default     = "dev"
-
-  validation {
-    condition     = contains(["dev", "test", "uat", "prod"], var.env)
-    error_message = "The env variable must be one of the following: dev, test, uat, prod."
-  }
-}
-
-variable "accounts" {
-  description = "Mapping of environment names to AWS account IDs"
-  type        = map(string)
-  default = {
-    dev  = "186769093804"
-    prod = "807867956627"
-  }
 }
 
 variable "tags" {
@@ -106,27 +86,11 @@ variable "ec2_properties" {
   }
 }
 
-variable "rds_instance_properties" {
-  description = "A map of RDS instance properties"
-  type        = map(string)
-  default = {
-    identifier          = "clixx-db"
-    username            = "admin"
-    instance_class      = "db.t4g.micro"
-    allocated_storage   = "20"
-    engine              = "mysql"
-    engine_version      = "8.4"
-    publicly_accessible = "true"
-    snapshot_identifier = "deijwordpressdb"
-    skip_final_snapshot = "true"
-  }
-} 
-
 variable "efs_properties" {
   description = "A map of EFS properties"
   type        = map(string)
   default = {
     creation_token = "clixx-EFS"
-    encrypted      = "true"
+    encrypted      = true
   }
 }

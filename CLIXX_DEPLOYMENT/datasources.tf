@@ -1,6 +1,6 @@
 # Get default vpc_id from AWS
 data "aws_vpc" "main" {
-  id = var.vpc_id
+  default = true
 }
 
 data "aws_subnets" "default" {
