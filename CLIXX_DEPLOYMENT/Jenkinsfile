@@ -9,6 +9,7 @@ pipeline {
       steps {
         // One or more steps need to be included within the steps block.
         sh 'terraform init'
+        sh 'terraform apply -auto-approve'
       }
     }
   }
