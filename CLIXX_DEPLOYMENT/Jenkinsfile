@@ -1,10 +1,21 @@
 pipeline {
   agent any
+  parameters {
+    credentials credentialType: 'com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsImpl', defaultValue: 'stack_prog_uat', name: 'AWS', required: false
+  }
+
   environment {
     PATH = "${PATH}:${getTerraformPath()}"
   }
 
   stages {
+    stage('Initial Deployment Approval') {
+      steps {
+        script {
+          def userInput = input(id: 'confirm', message: 'Start Pipeline?', parameters: [ [$class: 'BooleanParameterDefinition', defaultValue: false, description: 'Start Pipeline', name: 'confirm'] ])
+        }
+      }
+    }
     stage('terraform init') {
       steps {
         // One or more steps need to be included within the steps block.
