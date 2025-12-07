@@ -1,0 +1,20 @@
+pipeline {
+  agent any
+  environment {
+    PATH = "${PATH}:${getTerraformPath()}"
+  }
+
+  stages {
+    stage('terraform init') {
+      steps {
+        // One or more steps need to be included within the steps block.
+        sh 'terraform init'
+      }
+    }
+  }
+}
+
+def getTerraformPath() {
+  def tfHome = tool name: 'terraform-14', type: 'terraform'
+  return tfHome
+}

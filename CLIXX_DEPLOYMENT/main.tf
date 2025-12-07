@@ -1,93 +1,51 @@
 #### Restores the database from the provided snapshot ####
-
 resource "aws_db_instance" "clixx_db" {
-  instance_class          = "db.t4g.micro"
-  identifier              = "terraform-clixx-db"
-  snapshot_identifier     = "clixxwordpressdb"
-  skip_final_snapshot     = true
+  instance_class          = var.rds_instance_properties["instance_class"]
+  identifier              = var.rds_instance_properties["identifier"]
+  snapshot_identifier     = var.rds_instance_properties["snapshot_identifier"]
+  skip_final_snapshot     = var.rds_instance_properties["skip_final_snapshot"]
   vpc_security_group_ids  = [aws_security_group.clixx_sg.id]
+  publicly_accessible     = var.rds_instance_properties["publicly_accessible"]
 
   lifecycle {
     ignore_changes = [snapshot_identifier]
   }
 }
 
-
 ### Create EFS for for clixx network file sharing ###
-
 resource "aws_efs_file_system" "clixx_efs" {
-  creation_token    = "clixx-web"
-  encrypted         = true
+  creation_token    = var.efs_properties["creation_token"]
+  encrypted         = var.efs_properties["encrypted"]
 
-  tags = {
-    Name = "Clixx-EFS"
-  }
+  tags = var.tags
 }
 
 ### Attach EFS to mount targets in each az for high availability ###
-
-resource "aws_efs_mount_target" "east1a" {
+resource "aws_efs_mount_target" "subnet_mounts" {
+  for_each = toset(data.aws_subnets.default.ids)
   file_system_id  = aws_efs_file_system.clixx_efs.id
-  subnet_id       = "subnet-0a3d701d4ae56bd83"
-  security_groups = [aws_security_group.clixx_sg.id]
-}
-
-resource "aws_efs_mount_target" "east1b" {
-  file_system_id  = aws_efs_file_system.clixx_efs.id
-  subnet_id       = "subnet-096c55d1b79478358"
-  security_groups = [aws_security_group.clixx_sg.id]
-}
-
-resource "aws_efs_mount_target" "east1c" {
-  file_system_id  = aws_efs_file_system.clixx_efs.id
-  subnet_id       = "subnet-02b9ff9a66612dba1"
-  security_groups = [aws_security_group.clixx_sg.id]
-}
-
-resource "aws_efs_mount_target" "east1d" {
-  file_system_id  = aws_efs_file_system.clixx_efs.id
-  subnet_id       = "subnet-0cea1d9a41e99ed45"
-  security_groups = [aws_security_group.clixx_sg.id]
-}
-
-resource "aws_efs_mount_target" "east1e" {
-  file_system_id  = aws_efs_file_system.clixx_efs.id
-  subnet_id       = "subnet-00a91d6c6d1743e8f"
-  security_groups = [aws_security_group.clixx_sg.id]
-}
-
-resource "aws_efs_mount_target" "east1f" {
-  file_system_id  = aws_efs_file_system.clixx_efs.id
-  subnet_id       = "subnet-05393b0e3f17eeeae"
+  subnet_id       = each.value
   security_groups = [aws_security_group.clixx_sg.id]
 }
 
 ### Application Load Balancer ###
-
 resource "aws_lb" "clixx_lb" {
-  name               = "clixx-lb-tf"
+  name               = var.ec2_properties["name"]
   load_balancer_type = "application"
   security_groups    = [aws_security_group.clixx_sg.id]
-  subnets            = ["subnet-0a3d701d4ae56bd83", "subnet-096c55d1b79478358", "subnet-02b9ff9a66612dba1", "subnet-0cea1d9a41e99ed45", "subnet-00a91d6c6d1743e8f", "subnet-05393b0e3f17eeeae"]
-
-  tags = {
-    Environment = "dev"
-    Name        = "Clixx LB"
-    CreatedBy   = "Deji using Terraform"
-  }
+  subnets            = data.aws_subnets.default.ids
+  tags               = var.tags
 }
 
 ### Target group for load balancer ###
-
 resource "aws_lb_target_group" "clixx_tg" {
-  name     = "tf-clixx-lb-tg"
+  name     = var.ec2_properties["name"]
   port     = 80
   protocol = "HTTP"
-  vpc_id   = data.aws_vpc.default.id
+  vpc_id   = data.aws_vpc.main.id
 }
 
 ### LB listener, forwards HTTP requests to target group ###
-
 resource "aws_lb_listener" "clixx_front-end" {
   load_balancer_arn = aws_lb.clixx_lb.arn
   port              = "80"
@@ -100,11 +58,11 @@ resource "aws_lb_listener" "clixx_front-end" {
 }
 
 ### Resolve Load Balancer DNS to our Route 53 domain (clixx.deji-stack.com) ###
-
 resource "aws_route53_record" "clixx_dns" {
-  zone_id = data.aws_route53_zone.clixx_dns.zone_id
-  name    = "clixx.${data.aws_route53_zone.clixx_dns.name}"
-  type    = "A"
+  provider = aws.management
+  zone_id  = data.aws_route53_zone.clixx_dns.zone_id
+  name     = "clixx.${data.aws_route53_zone.clixx_dns.name}"
+  type     = "A"
 
   alias {
     name                   = aws_lb.clixx_lb.dns_name
@@ -114,20 +72,36 @@ resource "aws_route53_record" "clixx_dns" {
 }
 
 ### Create key pair ###
-
 resource "aws_key_pair" "clixx_kp" {
-  key_name   = "terraform-kp"
-  public_key = file("~/.ssh/terraform-key.pub")
+  key_name   = "clixx-kp"
+  public_key = file("~/.ssh/clixx-kp.pub")
 }
 
 ### Create Auto Scaling Group ###
+resource "aws_autoscaling_policy" "clixx_scaling_policy" {
+  name                   = "clixx-scale-out-policy"
+  policy_type            = "TargetTrackingScaling"
+  adjustment_type        = "ChangeInCapacity"
+  autoscaling_group_name = aws_autoscaling_group.clixx_asg.name
+
+  target_tracking_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ASGAverageCPUUtilization"
+    }
+
+    target_value = 50.0
+  }
+}
 
 resource "aws_autoscaling_group" "clixx_asg" {
-  availability_zones = ["us-east-1a", "us-east-1b", "us-east-1c", "us-east-1d", "us-east-1e", "us-east-1f"]
+  vpc_zone_identifier = data.aws_subnets.default.ids
+  name                = var.ec2_properties["name"]
   desired_capacity   = 1
   max_size           = 2
   min_size           = 1
   target_group_arns  = [aws_lb_target_group.clixx_tg.arn]
+  
+  depends_on = [aws_db_instance.clixx_db]
 
   launch_template {
     id      = aws_launch_template.clixx_template.id
