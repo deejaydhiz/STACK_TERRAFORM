@@ -17,8 +17,41 @@ pipeline {
       }
     }
 
+    stage('Checkout') {
+      steps {
+        checkout scm
+        // Stash workspace so subsequent stages running on different agents can retrieve files
+        script {
+          stash name: 'source', includes: '**'
+        }
+      }
+    }
+
+    stage('Debug Workspace') {
+      steps {
+        script {
+          echo "Debug: workspace list after checkout (from stash)"
+          // unstash into current workspace to inspect
+          unstash 'source'
+          sh '''
+            echo "Workspace: $(pwd)"
+            echo "--- Top-level files ---"
+            ls -la || true
+            echo "--- All .tf files (if any) ---"
+            ls -la *.tf || true
+            echo "--- Git branch ---"
+            git rev-parse --abbrev-ref HEAD || true
+          '''
+        }
+      }
+    }
+
     stage('terraform init') {
       steps {
+        // Ensure workspace files are available on this agent
+        script {
+          unstash 'source'
+        }
         sh 'terraform init'
       }
     }
