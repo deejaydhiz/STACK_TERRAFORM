@@ -86,6 +86,12 @@ variable "ec2_properties" {
   }
 }
 
+variable "public_key_path" {
+  description = "Path to the public key file (.pub) used to create the AWS key pair. Can be relative to the module directory or absolute."
+  type        = string
+  default     = "./clixx-kp.pub"
+}
+
 variable "efs_properties" {
   description = "A map of EFS properties"
   type        = map(string)

@@ -12,13 +12,18 @@ pipeline {
     stage('Initial Deployment Approval') {
       steps {
         script {
-          def userInput = input(id: 'confirm', message: 'Start Pipeline?', parameters: [ [$class: 'BooleanParameterDefinition', defaultValue: false, description: 'Start Pipeline', name: 'confirm'] ])
+          def userInput = input(id: 'initial_confirm', message: 'Start Pipeline?', parameters: [ [$class: 'BooleanParameterDefinition', defaultValue: false, description: 'Start Pipeline', name: 'confirm'] ])
         }
       }
     }
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+    
     stage('terraform init') {
       steps {
-        // One or more steps need to be included within the steps block.
         sh 'terraform init'
       }
     }
@@ -32,7 +37,7 @@ pipeline {
     stage('Final Deployment Approval') { 
       steps { 
         script { 
-          def userInput = input(id: 'confirm', message: 'Apply Terraform?', parameters: [ [$class: 'BooleanParameterDefinition', defaultValue: false, description: 'Apply terraform', name: 'confirm'] ]) 
+          def userInput = input(id: 'final_confirm', message: 'Apply Terraform?', parameters: [ [$class: 'BooleanParameterDefinition', defaultValue: false, description: 'Apply terraform', name: 'confirm'] ]) 
         } 
       } 
     }
